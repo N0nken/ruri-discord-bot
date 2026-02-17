@@ -6,6 +6,7 @@ MANGA_UPDATES_BASE_URL = "https://api.mangaupdates.com/v1/series/{id}/rss"
 
 
 def get_latest_chapter(manga_id: int, manga_latest_chapter: float):
+    # get rss feed
     try:
         r = requests.get(f"{MANGA_UPDATES_BASE_URL.format(id=manga_id)}")
     except:
@@ -13,8 +14,10 @@ def get_latest_chapter(manga_id: int, manga_latest_chapter: float):
     
     latest_chapter = -1
 
+    # parse rss feed
     chapters = _parse_rss(r.text)
 
+    # find the latest chapter
     for chapter in chapters:
         if float(chapter) > manga_latest_chapter and float(chapter) > latest_chapter:
             latest_chapter = float(chapter)
@@ -38,6 +41,9 @@ def _parse_rss(rss_string: str):
 
 
 def _extract_chapter(title: str) -> float:
+    # chapters are written as c.x.y with c. marking the start of the chapter
+    # so... get every character before the c starting from the end going backwards
+    # results in an inverted string tho
     inverted_string = ""
     for i in range(len(title) - 1, -1, -1):
         if title[i] == "c":
@@ -45,8 +51,11 @@ def _extract_chapter(title: str) -> float:
         
         inverted_string += title[i]
     
+    # so invert the inverted string to get the original string
     chapter_string = ""
     for i in range(len(inverted_string) - 1, -1, -1):
         chapter_string += inverted_string[i]
 
+    # inverted string does however keep the . right after the c
+    # so remove it by returning the string from index 1
     return chapter_string[1:]
