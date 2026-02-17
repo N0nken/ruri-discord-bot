@@ -3,16 +3,18 @@ import os
 
 
 class Manga:
-    def __init__(self, name: str, mangadex: str, role_id: int):
+    def __init__(self, name: str, id: str, role_id: int = -1, latest_chapter: int = -1):
         self.name = name
-        self.mangadex = mangadex
+        self.id = id
         self.role_id = role_id
+        self.latest_chapter = latest_chapter
 
     def dict(self) -> dict:
         return {
             "name" : self.name,
-            "mangadex" : self.mangadex,
-            "role_id" : self.role_id
+            "id" : self.id,
+            "role_id" : self.role_id,
+            "latest_chapter" : self.latest_chapter
         }
 
 
@@ -52,17 +54,17 @@ def _get_overview() -> dict:
     return None
 
 
-def _get_guild_file_path(id: str) -> str:
+def _get_guild_file_path(guild_id: str) -> str:
     overview_data = _get_overview()
 
     base_path = overview_data["base_path"]
 
     # raise error if guild isn't registered
-    if not id in overview_data["file_names"].keys():
+    if not guild_id in overview_data["file_names"].keys():
         raise ValueError("Guild ID not recognized")
 
     # build filepath
-    file_name = overview_data["file_names"][id]
+    file_name = overview_data["file_names"][guild_id]
     full_path = "configs/" + base_path + file_name
 
     return full_path
@@ -75,8 +77,17 @@ def _write_guild(guild: Guild):
         json.dump(content, guild_file)
 
 
-def get_guild_config(id: str) -> Guild:
-    full_path = _get_guild_file_path(id)
+def get_registered_guilds() -> list[str]:
+    overview = _get_overview()
+    return overview["file_names"].keys()
+
+
+def is_guild_registered(guild_id: str) -> bool:
+    return guild_id in get_registered_guilds()
+
+
+def get_guild_config(guild_id: str) -> Guild:
+    full_path = _get_guild_file_path(guild_id)
 
     # raise error if the guilds file for some reason isn't found
     if not os.path.exists(full_path):
@@ -89,13 +100,13 @@ def get_guild_config(id: str) -> Guild:
 
         manga = []
         for m in guild_data["manga"]:
-            manga.append(Manga(m["name"], m["mangadex"], m["role_id"]))
+            manga.append(Manga(m["name"], m["id"], m["role_id"], m["latest_chapter"]))
 
-        return Guild(id, guild_name, channel_id, manga)
+        return Guild(guild_id, guild_name, channel_id, manga)
 
 
-def get_tracked_mangas(id: str) -> list[Manga]:
-    guild_config = get_guild_config(id)
+def get_tracked_manga(guild_id: str) -> list[Manga]:
+    guild_config = get_guild_config(guild_id)
     return guild_config.manga
 
 
@@ -154,6 +165,17 @@ def remove_manga(guild_id: str, name: str):
     _write_guild(guild)
 
 
+def set_latest_chapter(guild_id: str, name: str, chapter: int):
+    guild_config = get_guild_config(guild_id)
+
+    for manga in guild_config.manga:
+        if manga.name != name:
+            continue
+        manga.latest_chapter = chapter
+    
+    _write_guild(guild_config)
+
+
 if __name__ == "__main__":
     get_guild_config("0")
     register_guild(Guild("1234567890", "test test", "0987654321", [
@@ -162,5 +184,5 @@ if __name__ == "__main__":
             Manga("Manga 3", "Mangadex_Link_3", 3)]))
     remove_manga("1234567890", "Manga 3")
     register_manga("1234567890", Manga("Manga 4", "Mangadex_Link_4", 4))
-    for manga in get_tracked_mangas("1234567890"):
+    for manga in get_tracked_manga("1234567890"):
         print(manga.dict())
