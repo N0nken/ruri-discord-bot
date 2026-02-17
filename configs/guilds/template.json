@@ -1,0 +1,11 @@
+{
+    "name" : "template",
+    "channel" : "",
+    "manga" : [
+        {
+            "name" : "template",
+            "mangadex" : "template",
+            "role_id" : 0
+        }
+    ]
+}
