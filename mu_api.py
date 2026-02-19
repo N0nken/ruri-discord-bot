@@ -30,32 +30,35 @@ def _parse_rss(rss_string: str):
     root = ET.fromstring(rss_string)
 
     # create empty list for news items
-    chapters = []
-    for item in root.findall('./channel/item'):
-        for child in item:
-            if child.tag == 'title':
-                chapters.append(_extract_chapter(child.text))
+    chapters = root.findall("./channel/item")
+
+    if len(chapters) == 0:
+        return -1
+    
+    latest_chapter_elem = chapters[0]
+    chapter_title_elem = latest_chapter_elem.find("./title")
+    
+    if chapter_title_elem == None:
+        return -1
     
     # return news items list
-    return chapters
+    return _extract_chapter(chapter_title_elem.text)
 
 
 def _extract_chapter(title: str) -> float:
-    # chapters are written as c.x.y with c. marking the start of the chapter
-    # so... get every character before the c starting from the end going backwards
-    # results in an inverted string tho
-    inverted_string = ""
-    for i in range(len(title) - 1, -1, -1):
-        if title[i] == "c":
-            break
-        
-        inverted_string += title[i]
-    
-    # so invert the inverted string to get the original string
-    chapter_string = ""
-    for i in range(len(inverted_string) - 1, -1, -1):
-        chapter_string += inverted_string[i]
+    # chapters are written as "bla bla bla bla bla bla c.X/X.X/X.X-Y.Y"
+    # so split at spaces to get the chapter as its own string
+    # then assume it has a range of chapters and split at "-" 
+    split = title.split(" ")
+    chapter_string = split[-1] # chapter always at the end
+    chapter_string = chapter_string[2:] # remove "c."
+    split = chapter_string.split("-")
 
-    # inverted string does however keep the . right after the c
-    # so remove it by returning the string from index 1
-    return chapter_string[1:]
+    # however we do assume it doesn't have a range when setting the
+    # initial value for the newest_chapter
+    # and then change it if it did have a range
+    newest_chapter = float(split[0])
+    if len(split) > 1: # release included a range of chapters
+        newest_chapter = float(split[1]) # so newest chapter is the upper bound of the range
+
+    return newest_chapter

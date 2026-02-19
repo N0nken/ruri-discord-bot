@@ -1,7 +1,6 @@
 from dotenv import load_dotenv
 import os
-from datetime import datetime
-import requests
+import datetime
 
 import discord
 from discord.ext import commands
@@ -39,7 +38,7 @@ client = Client(command_prefix="!", intents=intents)
 
 GUILD_ID = discord.Object(id=1473070081700528170)
 UPDATE_RATE_MINUTES = 1
-UPDATE_MESSAGE = "@{role} Chapter {chapter_number} is now out for {manga_name}!"
+UPDATE_MESSAGE = "@{role} New chapter (ch. {chapter_number}) is now out for {manga_name}! \nLatest chapter is ch. {latest_chapter}"
 
 
 # |------------------------------------------------|
@@ -65,7 +64,7 @@ async def track_manga(interaction: discord.Interaction, manga_name: str, manga_u
         configs.register_guild(configs.Guild(str(interaction.guild_id), interaction.guild.name))
     
     try:
-        configs.register_manga(str(interaction.guild_id), configs.Manga(manga_name, manga_updates_id, role_id, latest_chapter))
+        configs.register_manga(str(interaction.guild_id), configs.Manga(manga_name, manga_updates_id, role_id, latest_chapter, str(datetime.date.today())))
         await interaction.response.send_message(f"Started tracking **{manga_name}**")
     except Exception as e:
         await interaction.response.send_message(e)
@@ -88,6 +87,10 @@ async def untrack_manga(interaction: discord.Interaction, manga_name: str):
                      "Shows a list of all tracked manga", 
                      guild=GUILD_ID)
 async def tracked_manga(interaction: discord.Interaction):
+    if not configs.is_guild_registered(str(interaction.guild_id)):
+        await interaction.response.send_message("No manga is being tracked in this server")
+        return
+    
     try:
         manga = configs.get_tracked_manga(str(interaction.guild_id))
         
@@ -122,7 +125,7 @@ async def update():
         channel = client.get_channel(int(configs.get_guild_config(guild_id).channel))
 
         for manga in configs.get_tracked_manga(guild_id):
-            # mangadex api call
+            # mangaupdates api call
             latest_chapter = api.get_latest_chapter(manga.id, manga.latest_chapter)
             
             if latest_chapter == -1:
@@ -132,7 +135,8 @@ async def update():
             await channel.send(
                 UPDATE_MESSAGE.format(role=manga.name, 
                                       chapter_number=str(latest_chapter if latest_chapter != int(latest_chapter) else int(latest_chapter)), 
-                                      manga_name=manga.name))
+                                      manga_name=manga.name,
+                                      latest_chapter=manga.latest_chapter))
 
 
 # |------------------------------------------------|

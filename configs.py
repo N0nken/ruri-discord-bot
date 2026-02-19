@@ -3,18 +3,21 @@ import os
 
 
 class Manga:
-    def __init__(self, name: str, id: str, role_id: int = -1, latest_chapter: int = -1):
+    def __init__(self, name: str, id: str, role_id: int = -1, latest_chapter: int = -1, last_updated: str = ""):
         self.name = name
         self.id = id
         self.role_id = role_id
         self.latest_chapter = latest_chapter
+        self.last_updated = last_updated
+
 
     def dict(self) -> dict:
         return {
             "name" : self.name,
             "id" : self.id,
             "role_id" : self.role_id,
-            "latest_chapter" : self.latest_chapter
+            "latest_chapter" : self.latest_chapter,
+            "last_updated" : self.last_updated
         }
 
 
@@ -100,7 +103,7 @@ def get_guild_config(guild_id: str) -> Guild:
 
         manga = []
         for m in guild_data["manga"]:
-            manga.append(Manga(m["name"], m["id"], m["role_id"], m["latest_chapter"]))
+            manga.append(Manga(m["name"], m["id"], m["role_id"], m["latest_chapter"], m["last_updated"]))
 
         return Guild(guild_id, guild_name, channel_id, manga)
 
@@ -176,13 +179,24 @@ def set_latest_chapter(guild_id: str, name: str, chapter: int):
     _write_guild(guild_config)
 
 
+def set_last_updated(guild_id: str, name: str, date: str):
+    guild_config = get_guild_config(guild_id)
+
+    for manga in guild_config.manga:
+        if manga.name != name:
+            continue
+        manga.last_updated = date
+    
+    _write_guild(guild_config)
+
+
 if __name__ == "__main__":
     get_guild_config("0")
     register_guild(Guild("1234567890", "test test", "0987654321", [
-            Manga("Manga 1", "Mangadex_Link_1", 1),
-            Manga("Manga 2", "Mangadex_Link_2", 2),
-            Manga("Manga 3", "Mangadex_Link_3", 3)]))
+            Manga("Manga 1", "Mangadex_Link_1", 1, "2001-01-01"),
+            Manga("Manga 2", "Mangadex_Link_2", 2, "2002-02-02"),
+            Manga("Manga 3", "Mangadex_Link_3", 3, "2003-03-03")]))
     remove_manga("1234567890", "Manga 3")
-    register_manga("1234567890", Manga("Manga 4", "Mangadex_Link_4", 4))
+    register_manga("1234567890", Manga("Manga 4", "Mangadex_Link_4", 4, "2004-04-04"))
     for manga in get_tracked_manga("1234567890"):
         print(manga.dict())
