@@ -15,12 +15,11 @@ def get_latest_chapter(manga_id: int, manga_latest_chapter: float):
     latest_chapter = -1
 
     # parse rss feed
-    chapters = _parse_rss(r.text)
+    newest_chapter = _parse_rss(r.text)
 
     # find the latest chapter
-    for chapter in chapters:
-        if float(chapter) > manga_latest_chapter and float(chapter) > latest_chapter:
-            latest_chapter = float(chapter)
+    if float(newest_chapter) > manga_latest_chapter:
+        latest_chapter = float(newest_chapter)
     
     return latest_chapter
 

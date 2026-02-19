@@ -113,8 +113,6 @@ async def update():
     # ... ...mangaupdates api check if new chapter released
     # ... ...if new chapter
     # ... ... ...send update
-    # ... ...else
-    # ... ... ...nothing
 
     guild_ids = configs.get_registered_guilds()
 
