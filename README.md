@@ -3,21 +3,21 @@
 <p>Requires a MySQL database (see ruri_discord_bot.sql).</p>
 <h1>Setup</h1>
 
-<h2>Discord bot</h2>
-<h3>Required permissions</h3>
+<h3>Discord bot</h3>
+<h5>Required permissions</h5>
 <ul list-style-type="none">
     <li>Send Messages</li>
     <li>Use Slash Commands</li>
 </ul>
-<h3>Required intents</h3>
+<h5>Required intents</h5>
 <ul list-style-type="none">
     <li>No required intents</li>
 </ul>
 
-<h2>MySQL</h2>
+<h3>MySQL</h3>
 See ruri_discord_bot.sql
 
-<h2>.env</h2>
+<h3>.env</h3>
 <p>A .env file with the following constants is required</p>
 <ul>
     <li>DISCORD_TOKEN=[BOT_TOKEN_HERE]</li>
