@@ -37,21 +37,32 @@ intents = discord.Intents.default()
 client = Client(command_prefix="!", intents=intents)
 
 GUILD_ID = discord.Object(id=1473070081700528170)
-UPDATE_RATE_MINUTES = 1
+UPDATE_RATE_MINUTES = 30
 UPDATE_MESSAGE = "@{role} New chapter (ch. {chapter_number}) is now out for {manga_name}! \nLatest chapter is ch. {latest_chapter}"
 
 
 # |------------------------------------------------|
 # |--------------------COMMANDS--------------------|
 # |------------------------------------------------|
+@client.tree.command(name="setup", description="(REQUIRED) Enables the bot for this server.", guild=GUILD_ID)
+async def setup(interaction: discord.Interaction):
+    if configs.is_guild_registered(interaction.guild_id):
+        await interaction.response.send_message("Bot has already been set up for this server")
+        return
+    
+    configs.register_guild(configs.Guild(interaction.guild_id, interaction.guild.name, interaction.channel_id))
+    await interaction.response.send_message("Bot has now been set up for this server. Start tracking manga by running /track")
+    print(f"set up bot for [{interaction.guild.name}]")
+
 @client.tree.command(name="set_update_channel", description=
                      "Makes the bot send the updates in the channel this command is run in.", 
                      guild=GUILD_ID)
 async def set_update_channel(interaction: discord.Interaction):
-    if not configs.is_guild_registered(str(interaction.guild_id)):
-        configs.register_guild(configs.Guild(str(interaction.guild_id), interaction.guild.name))
+    if not configs.is_guild_registered(interaction.guild_id):
+        await interaction.response.send_message("Bot has not been set up for this server")
+        return
 
-    configs.set_channel(str(interaction.guild_id), str(interaction.channel_id))
+    configs.set_channel(interaction.guild_id, interaction.channel_id)
     await interaction.response.send_message(f"Will now send updates in **{interaction.channel.name}**")
     print(f"updated channel for {interaction.guild.name} to {interaction.channel.name}")
 
@@ -60,11 +71,12 @@ async def set_update_channel(interaction: discord.Interaction):
                      "Start tracking a manga (role_id is not implemented)", 
                      guild=GUILD_ID)
 async def track_manga(interaction: discord.Interaction, manga_name: str, manga_updates_id: int, role_id: int = -1, latest_chapter: int = -1):
-    if not configs.is_guild_registered(str(interaction.guild_id)):
-        configs.register_guild(configs.Guild(str(interaction.guild_id), interaction.guild.name))
+    if not configs.is_guild_registered(interaction.guild_id):
+        await interaction.response.send_message("Bot has not been set up for this server")
+        return
     
     try:
-        configs.register_manga(str(interaction.guild_id), configs.Manga(manga_name, manga_updates_id, role_id, latest_chapter, str(datetime.date.today())))
+        configs.track_manga(interaction.guild_id, configs.Manga(manga_name, manga_updates_id, role_id, latest_chapter, str(datetime.date.today())))
         await interaction.response.send_message(f"Started tracking **{manga_name}**")
     except Exception as e:
         await interaction.response.send_message(e)
@@ -73,11 +85,12 @@ async def track_manga(interaction: discord.Interaction, manga_name: str, manga_u
 @client.tree.command(name="untrack", description="Stop tracking a manga", 
                      guild=GUILD_ID)
 async def untrack_manga(interaction: discord.Interaction, manga_name: str):
-    if not configs.is_guild_registered(str(interaction.guild_id)):
-        configs.register_guild(configs.Guild(str(interaction.guild_id), interaction.guild.name))
+    if not configs.is_guild_registered(interaction.guild_id):
+        await interaction.response.send_message("Bot has not been set up for this server")
+        return
     
     try:
-        configs.remove_manga(str(interaction.guild_id), manga_name)
+        configs.stop_tracking_manga(interaction.guild_id, manga_name)
         await interaction.response.send_message(f"Stopped tracking **{manga_name}**")
     except Exception as e:
         await interaction.response.send_message(e)
@@ -87,12 +100,12 @@ async def untrack_manga(interaction: discord.Interaction, manga_name: str):
                      "Shows a list of all tracked manga", 
                      guild=GUILD_ID)
 async def tracked_manga(interaction: discord.Interaction):
-    if not configs.is_guild_registered(str(interaction.guild_id)):
-        await interaction.response.send_message("No manga is being tracked in this server")
+    if not configs.is_guild_registered(interaction.guild_id):
+        await interaction.response.send_message("Bot has not been set up for this server")
         return
     
     try:
-        manga = configs.get_tracked_manga(str(interaction.guild_id))
+        manga = configs.get_tracked_manga(interaction.guild_id)
         
         response = f"Tracked manga for **{interaction.guild.name}**"
         for m in manga:
@@ -108,28 +121,26 @@ async def tracked_manga(interaction: discord.Interaction):
 # |------------------------------------------------|
 @tasks.loop(minutes=UPDATE_RATE_MINUTES)
 async def update():
-    # go through each guild
-    # ...go through each manga
-    # ... ...mangaupdates api check if new chapter released
-    # ... ...if new chapter
-    # ... ... ...send update
+    # for each manga
+    # ... if updated
+    # ... ... for every guild tracking this manga
+    # ... ... ... send uptead
 
-    guild_ids = configs.get_registered_guilds()
+    manga = configs.get_all_manga()
 
-    for guild_id in guild_ids:
-        if guild_id == "0": # skip template
+    for manga in manga:
+        # mangaupdates api call
+        latest_chapter = api.get_latest_chapter(manga.id, manga.latest_chapter)
+        
+        if latest_chapter == -1:
             continue
 
-        channel = client.get_channel(int(configs.get_guild_config(guild_id).channel))
+        configs.set_latest_chapter(manga.id, latest_chapter)
+        channels = configs.get_update_channel_ids_for_servers_tracking_manga(manga.id)
 
-        for manga in configs.get_tracked_manga(guild_id):
-            # mangaupdates api call
-            latest_chapter = api.get_latest_chapter(manga.id, manga.latest_chapter)
-            
-            if latest_chapter == -1:
-                continue
-            
-            configs.set_latest_chapter(guild_id, manga.name, latest_chapter)
+        for channel_id in channels:
+            channel = client.get_channel(channel_id)
+
             await channel.send(
                 UPDATE_MESSAGE.format(role=manga.name, 
                                       chapter_number=str(latest_chapter if latest_chapter != int(latest_chapter) else int(latest_chapter)), 
