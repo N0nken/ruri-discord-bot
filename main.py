@@ -44,7 +44,8 @@ UPDATE_MESSAGE = "@{role} New chapter (ch. {chapter_number}) is now out for {man
 # |------------------------------------------------|
 # |--------------------COMMANDS--------------------|
 # |------------------------------------------------|
-@client.tree.command(name="setup", description="(REQUIRED) Enables the bot for this server.", guild=GUILD_ID)
+@client.tree.command(name="setup", description=
+                     "(REQUIRED) Enables the bot for this server.")
 async def setup(interaction: discord.Interaction):
     if configs.is_guild_registered(interaction.guild_id):
         await interaction.response.send_message("Bot has already been set up for this server")
@@ -55,8 +56,7 @@ async def setup(interaction: discord.Interaction):
     print(f"set up bot for [{interaction.guild.name}]")
 
 @client.tree.command(name="set_update_channel", description=
-                     "Makes the bot send the updates in the channel this command is run in.", 
-                     guild=GUILD_ID)
+                     "Makes the bot send the updates in the channel this command is run in.")
 async def set_update_channel(interaction: discord.Interaction):
     if not configs.is_guild_registered(interaction.guild_id):
         await interaction.response.send_message("Bot has not been set up for this server")
@@ -68,8 +68,7 @@ async def set_update_channel(interaction: discord.Interaction):
 
 
 @client.tree.command(name="track", description=
-                     "Start tracking a manga (role_id is not implemented)", 
-                     guild=GUILD_ID)
+                     "Start tracking a manga (role_id is not implemented)")
 async def track_manga(interaction: discord.Interaction, manga_name: str, manga_updates_id: int, role_id: int = -1, latest_chapter: int = -1):
     if not configs.is_guild_registered(interaction.guild_id):
         await interaction.response.send_message("Bot has not been set up for this server")
@@ -82,8 +81,8 @@ async def track_manga(interaction: discord.Interaction, manga_name: str, manga_u
         await interaction.response.send_message(e)
 
 
-@client.tree.command(name="untrack", description="Stop tracking a manga", 
-                     guild=GUILD_ID)
+@client.tree.command(name="untrack", description=
+                     "Stop tracking a manga")
 async def untrack_manga(interaction: discord.Interaction, manga_name: str):
     if not configs.is_guild_registered(interaction.guild_id):
         await interaction.response.send_message("Bot has not been set up for this server")
@@ -97,8 +96,7 @@ async def untrack_manga(interaction: discord.Interaction, manga_name: str):
 
 
 @client.tree.command(name="tracked_manga", description=
-                     "Shows a list of all tracked manga", 
-                     guild=GUILD_ID)
+                     "Shows a list of all tracked manga")
 async def tracked_manga(interaction: discord.Interaction):
     if not configs.is_guild_registered(interaction.guild_id):
         await interaction.response.send_message("Bot has not been set up for this server")
