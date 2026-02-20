@@ -11,11 +11,13 @@ password = os.getenv("SQL_PASS")
 database = mysql.connector.connect(
     host="localhost",
     user=user,
-    passwd=password
+    passwd=password,
+    database="ruri_discord_bot",
+    autocommit=True
 )
 
 def _exit_handler():
-    database.close()
+    database.disconnect()
 
 atexit.register(_exit_handler)
 
@@ -40,7 +42,7 @@ class Guild:
 def is_guild_registered(guild_id: int) -> bool:
     cursor = database.cursor()
 
-    cursor.execute("SELECT count(discord_guild_id) FROM guilds WHERE discord_guild_id=%s", (guild_id))
+    cursor.execute("SELECT count(discord_guild_id) FROM guilds WHERE discord_guild_id=%s", [guild_id])
     result = cursor.fetchone()
     count = result[0]
 
@@ -53,7 +55,7 @@ def register_guild(guild: Guild):
     query = "INSERT INTO guilds (discord_guild_id, name, updates_channel_id) VALUES (%s, %s, %s)"
 
     cursor = database.cursor()
-    cursor.execute(query, (guild.id, guild.name, guild.channel))
+    cursor.execute(query, [guild.id, guild.name, guild.channel])
     cursor.close()
 
 
@@ -61,7 +63,7 @@ def get_tracked_manga(guild_id: int) -> list[Manga]:
     query = "SELECT * FROM manga WHERE manga_updates_id IN (SELECT manga_updates_id FROM tracked_manga WHERE discord_guild_id=%s);"
     
     cursor = database.cursor()
-    cursor.execute(query, (guild_id))
+    cursor.execute(query, [guild_id])
     result = cursor.fetchall()
 
     cursor.close()
@@ -77,23 +79,23 @@ def set_channel(guild_id: int, channel_id: int):
     query = "UPDATE guilds SET updates_channel_id=%s WHERE discord_guild_id=%s;"
 
     cursor = database.cursor()
-    cursor.execute(query, (channel_id, guild_id))
+    cursor.execute(query, [channel_id, guild_id])
     cursor.close()
 
 
 def track_manga(guild_id: int, manga: Manga):
     insert_manga_query = "INSERT INTO manga (manga_updates_id, name, latest_chapter) VALUES (%s, %s, %s)"
-    update_guild_tracking_query = "INSERT INTO tracked_manga (discord_guild_id, manga_updates_id) VALEUS (%s, %s)"
+    update_guild_tracking_query = "INSERT INTO tracked_manga (discord_guild_id, manga_updates_id) VALUES (%s, %s)"
 
     cursor = database.cursor()
 
     # manga may already exist in db
     try:
-        cursor.execute(insert_manga_query, (manga.id, manga.name, manga.latest_chapter))
+        cursor.execute(insert_manga_query, [manga.id, manga.name, manga.latest_chapter])
     except:
         pass
 
-    cursor.execute(update_guild_tracking_query, (guild_id, manga.id))
+    cursor.execute(update_guild_tracking_query, [guild_id, manga.id])
     cursor.close()
 
 
@@ -101,7 +103,7 @@ def stop_tracking_manga(guild_id: int, manga_id: int):
     query = "DELETE FROM tracked_manga WHERE discord_guild_id=%s AND manga_updates_id=%s"
 
     cursor = database.cursor()
-    cursor.execute(query, (guild_id, manga_id))
+    cursor.execute(query, [guild_id, manga_id])
     cursor.close()
 
 
@@ -109,7 +111,7 @@ def set_latest_chapter(manga_id: int, chapter: float):
     query = "UPDATE manga SET latest_chapter=%s, last_updated=%s WHERE manga_updates_id=%s"
 
     cursor = database.cursor()
-    cursor.execute(query, (chapter, datetime.datetime.now(), manga_id))
+    cursor.execute(query, [chapter, datetime.datetime.now(), manga_id])
     cursor.close()
 
 
@@ -132,7 +134,7 @@ def get_update_channel_ids_for_servers_tracking_manga(manga_id: int) -> list[int
     query = "SELECT updates_channel_id FROM guilds WHERE discord_guild_id IN (SELECT discord_guild_id FROM tracked_manga WHERE manga_updates_id=%s)"
 
     cursor = database.cursor()
-    cursor.execute(query, (manga_id))
+    cursor.execute(query, [manga_id])
     result = cursor.fetchall()
     cursor.close()
 
