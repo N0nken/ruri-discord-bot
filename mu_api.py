@@ -15,7 +15,7 @@ def get_latest_chapter(manga_id: int, manga_latest_chapter: float):
     latest_chapter = -1
 
     # parse rss feed
-    newest_chapter = _parse_rss(r.text)
+    newest_chapter = _parse_rss_for_chapter(r.text)
 
     # find the latest chapter
     if float(newest_chapter) > manga_latest_chapter:
@@ -24,7 +24,7 @@ def get_latest_chapter(manga_id: int, manga_latest_chapter: float):
     return latest_chapter
 
 
-def _parse_rss(rss_string: str):
+def _parse_rss_for_chapter(rss_string: str) -> float:
     # create element tree object
     root = ET.fromstring(rss_string)
 
@@ -61,3 +61,43 @@ def _extract_chapter(title: str) -> float:
         newest_chapter = float(split[1]) # so newest chapter is the upper bound of the range
 
     return newest_chapter
+
+
+def get_manga_name(manga_id: int) -> str:
+    # get rss feed
+    try:
+        r = requests.get(f"{MANGA_UPDATES_BASE_URL.format(id=manga_id)}")
+    except:
+        return -1
+    
+    return _parse_rss_for_title(r.text)
+    
+
+def _parse_rss_for_title(rss_string: str) -> str:
+    # create element tree object
+    root = ET.fromstring(rss_string)
+
+    # create empty list for news items
+    chapters = root.findall("./channel/item")
+
+    if len(chapters) == 0:
+        return ""
+    
+    latest_chapter_elem = chapters[0]
+    chapter_title_elem = latest_chapter_elem.find("./title")
+
+    if chapter_title_elem == None:
+        return ""
+
+    return _extract_title(chapter_title_elem.text)
+
+
+def _extract_title(title: str) -> str:
+    chapter_start = 0
+    for i in range(len(title) - 1, -1, -1):
+        if title[i] == "c":
+            chapter_start = i
+            break
+    
+    title = title[:i-1]
+    return title

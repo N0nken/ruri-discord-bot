@@ -100,10 +100,17 @@ def track_manga(guild_id: int, manga: Manga):
 
 
 def stop_tracking_manga(guild_id: int, manga_id: int):
-    query = "DELETE FROM tracked_manga WHERE discord_guild_id=%s AND manga_updates_id=%s"
+    forget_tracking_query = "DELETE FROM tracked_manga WHERE discord_guild_id=%s AND manga_updates_id=%s"
+    manga_track_count_query = "SELECT count(*) FROM tracked_manga WHERE manga_updates_id=%s"
+    forget_manga_query = "DELETE FROM manga WHERE manga_updates_id=%s"
 
     cursor = database.cursor()
-    cursor.execute(query, [guild_id, manga_id])
+    cursor.execute(forget_tracking_query, [guild_id, manga_id])
+    
+    cursor.execute(manga_track_count_query, [manga_id])
+    if cursor.fetchone()[0] == 0:
+        cursor.execute(forget_manga_query, [manga_id])
+
     cursor.close()
 
 
@@ -143,6 +150,17 @@ def get_update_channel_ids_for_servers_tracking_manga(manga_id: int) -> list[int
         channel_ids.append(row[0])
     
     return channel_ids
+
+
+def get_manga_details(manga_id: int) -> Manga:
+    query = "SELECT * FROM manga WHERE manga_updates_id=%s"
+
+    cursor = database.cursor()
+    cursor.execute(query, [manga_id])
+    result = cursor.fetchone()
+    cursor.close()
+
+    return Manga(result[1], result[0], latest_chapter=result[2], last_updated=result[3])
 
 
 if __name__ == "__main__":
