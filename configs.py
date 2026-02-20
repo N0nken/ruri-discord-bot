@@ -51,143 +51,54 @@ class Guild:
 
 
 def _get_overview() -> dict:
-    with open("configs/overview.json", "r") as overview:
-        overview_data = json.load(overview)
-        return overview_data
-    return None
+    pass
 
 
 def _get_guild_file_path(guild_id: str) -> str:
-    overview_data = _get_overview()
-
-    base_path = overview_data["base_path"]
-
-    # raise error if guild isn't registered
-    if not guild_id in overview_data["file_names"].keys():
-        raise ValueError("Guild ID not recognized")
-
-    # build filepath
-    file_name = overview_data["file_names"][guild_id]
-    full_path = "configs/" + base_path + file_name
-
-    return full_path
+    pass
 
 
 def _write_guild(guild: Guild):
-    content = guild.dict()
-    content.pop("id")
-    with open(_get_guild_file_path(guild.id), "w") as guild_file:
-        json.dump(content, guild_file)
+    pass
 
 
 def get_registered_guilds() -> list[str]:
-    overview = _get_overview()
-    return overview["file_names"].keys()
+    pass
 
 
 def is_guild_registered(guild_id: str) -> bool:
-    return guild_id in get_registered_guilds()
+    pass
 
 
 def get_guild_config(guild_id: str) -> Guild:
-    full_path = _get_guild_file_path(guild_id)
-
-    # raise error if the guilds file for some reason isn't found
-    if not os.path.exists(full_path):
-        raise FileExistsError("File not found")
-
-    with open(full_path, "r") as guild_file:
-        guild_data = json.load(guild_file)
-        guild_name = guild_data["name"]
-        channel_id = guild_data["channel"]
-
-        manga = []
-        for m in guild_data["manga"]:
-            manga.append(Manga(m["name"], m["id"], m["role_id"], m["latest_chapter"], m["last_updated"]))
-
-        return Guild(guild_id, guild_name, channel_id, manga)
+    pass
 
 
 def get_tracked_manga(guild_id: str) -> list[Manga]:
-    guild_config = get_guild_config(guild_id)
-    return guild_config.manga
-
+    pass
 
 def register_guild(guild: Guild):
-    # get guild overview
-    overview_data = _get_overview()
-    
-    # raise error if guild already exists
-    if guild.id in overview_data["file_names"].keys():
-        raise ValueError("Guild already registered")
-
-    # add new config file path to overview
-    overview_data["file_names"][guild.id] = guild.id + ".json"
-    with open("configs/overview.json", "w") as overview:
-        json.dump(overview_data, overview)
-
-    # write content to guild file
-    _write_guild(guild)
+    pass
 
 
 def set_channel(guild_id: str, channel_id: str):
-    guild = get_guild_config(guild_id)
-    guild.channel = channel_id
-    _write_guild(guild)
+    pass
 
 
 def register_manga(guild_id: str, manga: Manga):
-    guild = get_guild_config(guild_id)
-
-    # raise error if manga already registered
-    if guild.is_manga_registered(manga.name):
-        raise ValueError("Manga already registered")
-    
-    guild.manga.append(manga)
-
-    # update guild file
-    _write_guild(guild)
+    pass
 
 
 def remove_manga(guild_id: str, name: str):
-    guild = get_guild_config(guild_id)
-
-    # raise error if manga is not registered. can't remove manga that doesn't exist dummy (,,>_<,,)
-    if not guild.is_manga_registered(name):
-        raise ValueError("Manga not registered")
-    
-    # remove manga
-    i = 0
-    for manga in guild.manga:
-        if manga.name == name:
-            break
-        i += 1
-    guild.manga.pop(i)
-
-    # update guild file
-    _write_guild(guild)
+    pass
 
 
 def set_latest_chapter(guild_id: str, name: str, chapter: int):
-    guild_config = get_guild_config(guild_id)
-
-    for manga in guild_config.manga:
-        if manga.name != name:
-            continue
-        manga.latest_chapter = chapter
-    
-    _write_guild(guild_config)
+    pass
 
 
 def set_last_updated(guild_id: str, name: str, date: str):
-    guild_config = get_guild_config(guild_id)
-
-    for manga in guild_config.manga:
-        if manga.name != name:
-            continue
-        manga.last_updated = date
-    
-    _write_guild(guild_config)
+    pass
 
 
 if __name__ == "__main__":
