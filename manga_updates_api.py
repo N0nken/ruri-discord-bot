@@ -5,14 +5,12 @@ import xml.etree.ElementTree as ET
 MANGA_UPDATES_URL = "https://api.mangaupdates.com/v1/series/{id}/rss"
 
 
-def get_latest_chapter(manga_id: int, manga_latest_chapter: float) -> str:
+def get_latest_chapter(manga_id: int) -> str:
     # get rss feed
     try:
         r = requests.get(f"{MANGA_UPDATES_URL.format(id=manga_id)}")
     except:
         return ""
-    
-    latest_chapter = ""
 
     # parse rss feed
     newest_chapter = _parse_rss_for_chapter(r.text)

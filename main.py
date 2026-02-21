@@ -151,7 +151,7 @@ async def update():
         # mangaupdates api call
         latest_chapter = api.get_latest_chapter(manga.id, manga.latest_chapter)
         
-        if latest_chapter == "":
+        if latest_chapter == "" or latest_chapter == manga.latest_chapter:
             continue
         
         db.set_latest_chapter(manga.id, latest_chapter)
