@@ -15,7 +15,7 @@
 </ul>
 
 <h3>MySQL</h3>
-<p>A MySQL database is required for this branch. If you don't have access to one then the main branch (which uses local .json files) should be used instead.</p>
+<p>A MySQL database is required.</p>
 <p>For the database design see ruri_discord_bot.sql.</p>
 
 <h3>.env</h3>
