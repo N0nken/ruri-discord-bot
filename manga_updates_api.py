@@ -2,29 +2,25 @@ import requests
 import xml.etree.ElementTree as ET
 
 
-MANGA_UPDATES_BASE_URL = "https://api.mangaupdates.com/v1/series/{id}/rss"
+MANGA_UPDATES_URL = "https://api.mangaupdates.com/v1/series/{id}/rss"
 
 
-def get_latest_chapter(manga_id: int, manga_latest_chapter: float):
+def get_latest_chapter(manga_id: int, manga_latest_chapter: float) -> str:
     # get rss feed
     try:
-        r = requests.get(f"{MANGA_UPDATES_BASE_URL.format(id=manga_id)}")
+        r = requests.get(f"{MANGA_UPDATES_URL.format(id=manga_id)}")
     except:
-        return -1
+        return ""
     
-    latest_chapter = -1
+    latest_chapter = ""
 
     # parse rss feed
     newest_chapter = _parse_rss_for_chapter(r.text)
-
-    # find the latest chapter
-    if float(newest_chapter) > manga_latest_chapter:
-        latest_chapter = float(newest_chapter)
     
-    return latest_chapter
+    return newest_chapter
 
 
-def _parse_rss_for_chapter(rss_string: str) -> float:
+def _parse_rss_for_chapter(rss_string: str) -> str:
     # create element tree object
     root = ET.fromstring(rss_string)
 
@@ -44,29 +40,20 @@ def _parse_rss_for_chapter(rss_string: str) -> float:
     return _extract_chapter(chapter_title_elem.text)
 
 
-def _extract_chapter(title: str) -> float:
+def _extract_chapter(title: str) -> str:
     # chapters are written as "bla bla bla bla bla bla c.X/X.X/X.X-Y.Y"
     # so split at spaces to get the chapter as its own string
-    # then assume it has a range of chapters and split at "-" 
     split = title.split(" ")
     chapter_string = split[-1] # chapter always at the end
     chapter_string = chapter_string[2:] # remove "c."
-    split = chapter_string.split("-")
 
-    # however we do assume it doesn't have a range when setting the
-    # initial value for the newest_chapter
-    # and then change it if it did have a range
-    newest_chapter = float(split[0])
-    if len(split) > 1: # release included a range of chapters
-        newest_chapter = float(split[1]) # so newest chapter is the upper bound of the range
-
-    return newest_chapter
+    return chapter_string
 
 
 def get_manga_name(manga_id: int) -> str:
     # get rss feed
     try:
-        r = requests.get(f"{MANGA_UPDATES_BASE_URL.format(id=manga_id)}")
+        r = requests.get(f"{MANGA_UPDATES_URL.format(id=manga_id)}")
     except:
         return -1
     
@@ -94,10 +81,11 @@ def _parse_rss_for_title(rss_string: str) -> str:
 
 def _extract_title(title: str) -> str:
     chapter_start = 0
+    # loop through the title backwards to find the first " ".
+    # thats where the title ends and the chapter starts
     for i in range(len(title) - 1, -1, -1):
-        if title[i] == "c":
+        if title[i] == " ":
             chapter_start = i
             break
     
-    title = title[:i-1]
-    return title
+    return title[:chapter_start]

@@ -1,3 +1,4 @@
 .env
 configs/guilds/*.json
 !configs/guilds/template.json
+__pycache__/

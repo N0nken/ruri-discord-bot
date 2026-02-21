@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 load_dotenv()
 user = os.getenv("SQL_USER")
 password = os.getenv("SQL_PASS")
+host = os.getenv("SQL_HOST")
 
 database = mysql.connector.connect(
-    host="localhost",
+    host=host,
     user=user,
     passwd=password,
     database="ruri_discord_bot",
@@ -23,7 +24,7 @@ atexit.register(_exit_handler)
 
 
 class Manga:
-    def __init__(self, name: str, id: int, role_id: int = -1, latest_chapter: int = -1, last_updated: str = ""):
+    def __init__(self, name: str, id: int, role_id: int = -1, latest_chapter: str = -1, last_updated: str = ""):
         self.name = name
         self.id = id
         self.role_id = role_id
@@ -114,7 +115,7 @@ def stop_tracking_manga(guild_id: int, manga_id: int):
     cursor.close()
 
 
-def set_latest_chapter(manga_id: int, chapter: float):
+def set_latest_chapter(manga_id: int, chapter: str):
     query = "UPDATE manga SET latest_chapter=%s, last_updated=%s WHERE manga_updates_id=%s"
 
     cursor = database.cursor()
@@ -166,10 +167,10 @@ def get_manga_details(manga_id: int) -> Manga:
 if __name__ == "__main__":
     #get_guild_config("0")
     register_guild(Guild("1234567890", "test test", "0987654321", [
-            Manga("Manga 1", "Mangadex_Link_1", 1, "2001-01-01"),
-            Manga("Manga 2", "Mangadex_Link_2", 2, "2002-02-02"),
-            Manga("Manga 3", "Mangadex_Link_3", 3, "2003-03-03")]))
+            Manga("Manga 1", "Mangadex_Link_1", "1", "2001-01-01"),
+            Manga("Manga 2", "Mangadex_Link_2", "2", "2002-02-02"),
+            Manga("Manga 3", "Mangadex_Link_3", "3", "2003-03-03")]))
     #remove_manga("1234567890", "Manga 3")
-    #register_manga("1234567890", Manga("Manga 4", "Mangadex_Link_4", 4, "2004-04-04"))
+    #register_manga("1234567890", Manga("Manga 4", "Mangadex_Link_4", "4", "2004-04-04"))
     for manga in get_tracked_manga("1234567890"):
         print(manga.dict())
