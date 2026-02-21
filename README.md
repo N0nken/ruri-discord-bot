@@ -19,9 +19,4 @@
 <p>For the database design see ruri_discord_bot.sql.</p>
 
 <h3>.env</h3>
-<p>A .env file with the following constants is required</p>
-<ul>
-    <li>DISCORD_TOKEN=[BOT_TOKEN_HERE]</li>
-    <li>SQL_USER=[USERNAME_FOR_MYSQL_DB_HERE]</li>
-    <li>SQL_PASS=[PASSWORD_FOR_MYSQL_DB_HERE]</li>
-</ul>
+<p>Fill out template.env with appropriate values and rename it to .env.</p>
