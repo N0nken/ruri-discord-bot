@@ -42,7 +42,7 @@ CREATE TABLE `guilds` (
 CREATE TABLE `manga` (
   `manga_updates_id` bigint NOT NULL,
   `name` text NOT NULL,
-  `latest_chapter` float NOT NULL,
+  `latest_chapter` text NOT NULL,
   `last_updated` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
