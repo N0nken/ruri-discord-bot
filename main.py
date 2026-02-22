@@ -18,13 +18,6 @@ class Client(commands.Bot):
     async def on_ready(self):
         print(f"Logged in as {self.user}!")
 
-        try:
-            guild = discord.Object(id=1473070081700528170)
-            synced = await self.tree.sync()
-            print(f"synced {len(synced)} commands to guild {guild.id}")
-        except Exception as e:
-            print(f"Error syncing commands: {e}")
-
         if not update.is_running():
             update.start()
             print("Auto-update task started")
@@ -36,10 +29,19 @@ class Client(commands.Bot):
 intents = discord.Intents.default()
 client = Client(command_prefix="!", intents=intents)
 
-DEV_GUILD_ID = discord.Object(id=1473070081700528170)
+DEV_GUILD_ID = discord.Object(id=942140682083115008)
 UPDATE_RATE_MINUTES = 30
 UPDATE_MESSAGE = "@{role} Chapter **{chapter_number}** is now out for **{manga_name}**!"
-GENERIC_ERROR_MESSAGE = "An error occurred when trying to reach the server"
+DB_CONNECTION_ERROR_MESSAGE = "An error occurred when trying to reach the server"
+BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE = "Bot has not been set up for this server"
+
+
+
+
+
+
+
+
 
 # |------------------------------------------------|
 # |--------------------COMMANDS--------------------|
@@ -48,42 +50,62 @@ GENERIC_ERROR_MESSAGE = "An error occurred when trying to reach the server"
 @client.tree.command(name="setup", description=
                      "(REQUIRED) Enables the bot for this server.")
 async def setup(interaction: discord.Interaction):
-    if db.is_guild_registered(interaction.guild_id):
-        await interaction.response.send_message("Bot has already been set up for this server", ephemeral=True)
+    try:
+        if not db.is_guild_registered(interaction.guild_id):
+            await interaction.response.send_message(BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE, ephemeral=True)
+            return
+    except:
+        await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
     
     try:
         db.register_guild(db.Guild(interaction.guild_id, interaction.guild.name, interaction.channel_id))
     except:
-        await interaction.response.send_message(GENERIC_ERROR_MESSAGE, ephemeral=True)
+        await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
 
     await interaction.response.send_message("Bot has now been set up for this server. Start tracking manga by running /track")
     print(f"set up bot for [{interaction.guild.name}]")
 
+
+
+
+
 # set update channel
 @client.tree.command(name="set_update_channel", description=
                      "Makes the bot send the updates in the channel this command is run in.")
 async def set_update_channel(interaction: discord.Interaction):
-    if not db.is_guild_registered(interaction.guild_id):
-        await interaction.response.send_message("Bot has not been set up for this server", ephemeral=True)
+    try:
+        if not db.is_guild_registered(interaction.guild_id):
+            await interaction.response.send_message(BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE, ephemeral=True)
+            return
+    except:
+        await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
 
     try:
         db.set_channel(interaction.guild_id, interaction.channel_id)
     except:
-        await interaction.response.send_message(GENERIC_ERROR_MESSAGE, ephemeral=True)
+        await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
 
     await interaction.response.send_message(f"Will now send updates in **{interaction.channel.name}**")
     print(f"updated channel for {interaction.guild.name} to {interaction.channel.name}")
 
+
+
+
+
 # track
 @client.tree.command(name="track", description=
                      "Start tracking a manga (role_id is not implemented)")
 async def track_manga(interaction: discord.Interaction, manga_updates_id: str, role_id: int = -1):
-    if not db.is_guild_registered(interaction.guild_id):
-        await interaction.response.send_message("Bot has not been set up for this server", ephemeral=True)
+    try:
+        if not db.is_guild_registered(interaction.guild_id):
+            await interaction.response.send_message(BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE, ephemeral=True)
+            return
+    except:
+        await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
     
     manga_name = api.get_manga_name(manga_updates_id)
@@ -92,23 +114,31 @@ async def track_manga(interaction: discord.Interaction, manga_updates_id: str, r
         return
 
     try:
-        db.track_manga(interaction.guild_id, db.Manga(manga_name, manga_updates_id, role_id))
+        db.track_manga(interaction.guild_id, db.Manga(manga_name, manga_updates_id, role_id, str(datetime.date.today())))
         await interaction.response.send_message(f"Started tracking **{manga_name}**")
     except Exception as e:
         await interaction.response.send_message(f"Failed to start tracking **{manga_name}**", ephemeral=True)
+
+
+
+
 
 # untrack
 @client.tree.command(name="untrack", description=
                      "Stop tracking a manga")
 async def untrack_manga(interaction: discord.Interaction, manga_id: str):
-    if not db.is_guild_registered(interaction.guild_id):
-        await interaction.response.send_message("Bot has not been set up for this server", ephemeral=True)
+    try:
+        if not db.is_guild_registered(interaction.guild_id):
+            await interaction.response.send_message(BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE, ephemeral=True)
+            return
+    except:
+        await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
 
     try:
         manga = db.get_manga_details(manga_id)
     except:
-        await interaction.response.send_message(GENERIC_ERROR_MESSAGE, ephemeral=True)
+        await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
 
     try:
@@ -117,12 +147,20 @@ async def untrack_manga(interaction: discord.Interaction, manga_id: str):
     except Exception as e:
         await interaction.response.send_message(f"Failed to stop tracking {manga_id}. Use /tracked_manga to make sure this server is tracking it before trying again.", ephemeral=True)
 
+
+
+
+
 # tracked manga
 @client.tree.command(name="tracked_manga", description=
                      "Shows a list of all tracked manga")
 async def tracked_manga(interaction: discord.Interaction):
-    if not db.is_guild_registered(interaction.guild_id):
-        await interaction.response.send_message("Bot has not been set up for this server", ephemeral=True)
+    try:
+        if not db.is_guild_registered(interaction.guild_id):
+            await interaction.response.send_message(BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE, ephemeral=True)
+            return
+    except:
+        await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
     
     try:
@@ -134,7 +172,29 @@ async def tracked_manga(interaction: discord.Interaction):
 
         await interaction.response.send_message(response)
     except Exception as e:
-        await interaction.response.send_message(GENERIC_ERROR_MESSAGE, ephemeral=True)
+        await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
+
+
+
+
+
+# set update schedule
+@client.tree.command(name="force_command_sync", description=
+                     "Force sync commands (DEV ONLY)",
+                     guild=DEV_GUILD_ID)
+async def force_command_sync(interaction: discord.Interaction):
+    try:
+        synced = await client.tree.sync()
+        await interaction.response.send_message(f"Synced {synced} commands!", ephemeral=True)
+    except Exception as e:
+        await interaction.response.send_message(f"Error syncing commands:\n\n{e}", ephemeral=True)
+
+
+
+
+
+
+
 
 
 # |------------------------------------------------|
@@ -155,12 +215,15 @@ async def update():
 
     for manga in manga:
         # mangaupdates api call
-        new_chapters = api.get_chapters(manga.id, str(yesterday()), str(yesterday()))
+        new_chapters = api.get_chapters(manga.id, manga.last_updated, str(datetime.date.today()))
         
         if len(new_chapters) == 0:
             continue
         
-        channels = db.get_update_channel_ids_for_servers_tracking_manga(manga.id)
+        try:
+            channels = db.get_update_channel_ids_for_servers_tracking_manga(manga.id)
+        except:
+            continue
 
         prepared_message = ""
         for chapter in new_chapters:
@@ -175,8 +238,10 @@ async def update():
 
             try:
                 await channel.send(prepared_message)
-            except Exception as e:
-                print(e)
+            except:
+                continue
+        
+        db.set_last_updated(manga.id)
 
 
 # |------------------------------------------------|
@@ -187,8 +252,7 @@ async def update():
 # |------------------------------------------------|
 # |----------------------MISC----------------------|
 # |------------------------------------------------|
-def yesterday() -> datetime.date:
-    return datetime.date.fromtimestamp(datetime.datetime.timestamp(datetime.datetime.today()) - 3600 * 24)
+
 
 # |------------------------------------------------|
 # |---------------------LAUNCH---------------------|

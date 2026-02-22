@@ -41,7 +41,8 @@ CREATE TABLE `guilds` (
 
 CREATE TABLE `manga` (
   `manga_updates_id` bigint NOT NULL,
-  `name` text NOT NULL
+  `name` text NOT NULL,
+  `last_updated` varchar(10) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------

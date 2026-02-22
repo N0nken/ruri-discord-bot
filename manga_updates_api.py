@@ -13,7 +13,7 @@ class Chapter:
 
 def get_chapters(manga_id: str, date_start: str = "0001-01-01", date_end: str = "9999-12-31") -> list[Chapter]:
     params = {
-        "search": manga_id,
+        "search": str(manga_id),
         "search_type": "series",
         "start_date": date_start,
         "end_date": date_end
@@ -41,7 +41,7 @@ def get_chapters(manga_id: str, date_start: str = "0001-01-01", date_end: str = 
 
 def get_manga_name(manga_id: str) -> str:
     params = {
-        "search": manga_id,
+        "search": str(manga_id),
         "search_type": "series",
         "perpage": 1
     }

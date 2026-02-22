@@ -24,10 +24,11 @@ atexit.register(_exit_handler)
 
 
 class Manga:
-    def __init__(self, name: str, id: int, role_id: int = -1):
+    def __init__(self, name: str, id: int, role_id: int = -1, last_updated="0000-00-00"):
         self.name = name
         self.id = id
         self.role_id = role_id
+        self.last_updated = last_updated
 
 
 class Guild:
@@ -69,7 +70,7 @@ def get_tracked_manga(guild_id: int) -> list[Manga]:
     
     manga = []
     for row in result:
-        manga.append(Manga(row[1], row[0]))
+        manga.append(Manga(row[1], row[0], row[2]))
     
     return manga
 
@@ -83,14 +84,14 @@ def set_channel(guild_id: int, channel_id: int):
 
 
 def track_manga(guild_id: int, manga: Manga):
-    insert_manga_query = "INSERT INTO manga (manga_updates_id, name) VALUES (%s, %s)"
+    insert_manga_query = "INSERT INTO manga (manga_updates_id, name, last_updated) VALUES (%s, %s, %s)"
     update_guild_tracking_query = "INSERT INTO tracked_manga (discord_guild_id, manga_updates_id) VALUES (%s, %s)"
 
     cursor = database.cursor()
 
     # manga may already exist in db
     try:
-        cursor.execute(insert_manga_query, [manga.id, manga.name])
+        cursor.execute(insert_manga_query, [manga.id, manga.name, manga.last_updated])
     except:
         pass
 
@@ -123,7 +124,7 @@ def get_all_manga() -> list[Manga]:
 
     manga = []
     for row in result:
-        manga.append(Manga(row[1], row[0]))
+        manga.append(Manga(row[1], row[0], row[2]))
     
     return manga
 
@@ -151,16 +152,12 @@ def get_manga_details(manga_id: int) -> Manga:
     result = cursor.fetchone()
     cursor.close()
 
-    return Manga(result[1], result[0])
+    return Manga(result[1], result[0], result[2])
 
 
-if __name__ == "__main__":
-    #get_guild_config("0")
-    register_guild(Guild("1234567890", "test test", "0987654321", [
-            Manga("Manga 1", "Mangadex_Link_1", "1", "2001-01-01"),
-            Manga("Manga 2", "Mangadex_Link_2", "2", "2002-02-02"),
-            Manga("Manga 3", "Mangadex_Link_3", "3", "2003-03-03")]))
-    #remove_manga("1234567890", "Manga 3")
-    #register_manga("1234567890", Manga("Manga 4", "Mangadex_Link_4", "4", "2004-04-04"))
-    for manga in get_tracked_manga("1234567890"):
-        print(manga.dict())
+def set_last_updated(manga_id: int):
+    query = "UPDATE manga SET last_updated=%s WHERE manga_updates_id=%s"
+
+    cursor = database.cursor()
+    cursor.execute(query, [str(datetime.date.today()), manga_id])
+    cursor.close()
