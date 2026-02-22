@@ -14,26 +14,33 @@ load_dotenv()
 token = os.getenv("DISCORD_TOKEN")
 
 
+# |------------------------------------------------|
+# |---------------------CONFIG---------------------|
+# |------------------------------------------------|
+DEV_GUILD_ID = discord.Object(id=942140682083115008)
+UPDATE_RATE_MINUTES = 30
+UPDATE_MESSAGE = "@{role} Chapter **{chapter_number}** is now out for **{manga_name}**!"
+DB_CONNECTION_ERROR_MESSAGE = "An error occurred when trying to reach the server"
+BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE = "Bot has not been set up for this server"
+
+
 class Client(commands.Bot):
     async def on_ready(self):
         print(f"Logged in as {self.user}!")
+
+        try:
+            synced = await client.tree.sync(guild=DEV_GUILD_ID)
+            print(f"Synced {len(synced)} commands!")
+        except Exception as e:
+            print(f"Error syncing commands:\n\n{e}")
 
         if not update.is_running():
             update.start()
             print("Auto-update task started")
 
 
-# |------------------------------------------------|
-# |---------------------CONFIG---------------------|
-# |------------------------------------------------|
 intents = discord.Intents.default()
 client = Client(command_prefix="!", intents=intents)
-
-DEV_GUILD_ID = discord.Object(id=942140682083115008)
-UPDATE_RATE_MINUTES = 30
-UPDATE_MESSAGE = "@{role} Chapter **{chapter_number}** is now out for **{manga_name}**!"
-DB_CONNECTION_ERROR_MESSAGE = "An error occurred when trying to reach the server"
-BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE = "Bot has not been set up for this server"
 
 
 
@@ -51,20 +58,12 @@ BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE = "Bot has not been set up for this server"
                      "(REQUIRED) Enables the bot for this server.")
 async def setup(interaction: discord.Interaction):
     try:
-        if not db.is_guild_registered(interaction.guild_id):
-            await interaction.response.send_message(BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE, ephemeral=True)
-            return
-    except:
-        await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
-        return
-    
-    try:
         db.register_guild(db.Guild(interaction.guild_id, interaction.guild.name, interaction.channel_id))
     except:
-        await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
+        await interaction.response.send_message("Bot has already been set up for this server OR an error occurred when trying to reach the server. \nTry again in a few minutes if you haven't set up the bot for this server yet.", ephemeral=True)
         return
 
-    await interaction.response.send_message("Bot has now been set up for this server. Start tracking manga by running /track")
+    await interaction.response.send_message("Bot has now been set up for this server. Start tracking manga by running /track", ephemeral=True)
     print(f"set up bot for [{interaction.guild.name}]")
 
 
@@ -89,8 +88,7 @@ async def set_update_channel(interaction: discord.Interaction):
         await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
 
-    await interaction.response.send_message(f"Will now send updates in **{interaction.channel.name}**")
-    print(f"updated channel for {interaction.guild.name} to {interaction.channel.name}")
+    await interaction.response.send_message(f"Will now send updates in **{interaction.channel.name}**", ephemeral=True)
 
 
 
@@ -185,7 +183,7 @@ async def tracked_manga(interaction: discord.Interaction):
 async def force_command_sync(interaction: discord.Interaction):
     try:
         synced = await client.tree.sync()
-        await interaction.response.send_message(f"Synced {synced} commands!", ephemeral=True)
+        await interaction.response.send_message(f"Synced {len(synced)} commands!", ephemeral=True)
     except Exception as e:
         await interaction.response.send_message(f"Error syncing commands:\n\n{e}", ephemeral=True)
 
