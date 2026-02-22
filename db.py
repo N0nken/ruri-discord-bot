@@ -24,12 +24,10 @@ atexit.register(_exit_handler)
 
 
 class Manga:
-    def __init__(self, name: str, id: int, role_id: int = -1, latest_chapter: str = -1, last_updated: str = ""):
+    def __init__(self, name: str, id: int, role_id: int = -1):
         self.name = name
         self.id = id
         self.role_id = role_id
-        self.latest_chapter = latest_chapter
-        self.last_updated = last_updated
 
 
 class Guild:
@@ -71,7 +69,7 @@ def get_tracked_manga(guild_id: int) -> list[Manga]:
     
     manga = []
     for row in result:
-        manga.append(Manga(row[1], row[0], latest_chapter=row[2], last_updated=str([3])))
+        manga.append(Manga(row[1], row[0]))
     
     return manga
 
@@ -85,14 +83,14 @@ def set_channel(guild_id: int, channel_id: int):
 
 
 def track_manga(guild_id: int, manga: Manga):
-    insert_manga_query = "INSERT INTO manga (manga_updates_id, name, latest_chapter) VALUES (%s, %s, %s)"
+    insert_manga_query = "INSERT INTO manga (manga_updates_id, name) VALUES (%s, %s)"
     update_guild_tracking_query = "INSERT INTO tracked_manga (discord_guild_id, manga_updates_id) VALUES (%s, %s)"
 
     cursor = database.cursor()
 
     # manga may already exist in db
     try:
-        cursor.execute(insert_manga_query, [manga.id, manga.name, manga.latest_chapter])
+        cursor.execute(insert_manga_query, [manga.id, manga.name])
     except:
         pass
 
@@ -115,14 +113,6 @@ def stop_tracking_manga(guild_id: int, manga_id: int):
     cursor.close()
 
 
-def set_latest_chapter(manga_id: int, chapter: str):
-    query = "UPDATE manga SET latest_chapter=%s, last_updated=%s WHERE manga_updates_id=%s"
-
-    cursor = database.cursor()
-    cursor.execute(query, [chapter, datetime.datetime.now(), manga_id])
-    cursor.close()
-
-
 def get_all_manga() -> list[Manga]:
     query = "SELECT * FROM manga"
 
@@ -133,7 +123,7 @@ def get_all_manga() -> list[Manga]:
 
     manga = []
     for row in result:
-        manga.append(Manga(row[1], row[0], latest_chapter=row[2], last_updated=row[3]))
+        manga.append(Manga(row[1], row[0]))
     
     return manga
 
@@ -161,7 +151,7 @@ def get_manga_details(manga_id: int) -> Manga:
     result = cursor.fetchone()
     cursor.close()
 
-    return Manga(result[1], result[0], latest_chapter=result[2], last_updated=result[3])
+    return Manga(result[1], result[0])
 
 
 if __name__ == "__main__":

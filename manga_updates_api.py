@@ -2,88 +2,67 @@ import requests
 import xml.etree.ElementTree as ET
 
 
-MANGA_UPDATES_URL = "https://api.mangaupdates.com/v1/series/{id}/rss"
+MANGA_UPDATES_SEARCH_RELEASES_URL = "https://api.mangaupdates.com/v1/releases/search"
 
 
-def get_latest_chapter(manga_id: int) -> str:
-    # get rss feed
+class Chapter:
+    def __init__(self, title: str, number: str):
+        self.title = title
+        self.number = number
+
+
+def get_chapters(manga_id: str, date_start: str = "0001-01-01", date_end: str = "9999-12-31") -> list[Chapter]:
+    params = {
+        "search": manga_id,
+        "search_type": "series",
+        "start_date": date_start,
+        "end_date": date_end
+    }
+
+    r = requests.post(
+        url=MANGA_UPDATES_SEARCH_RELEASES_URL,
+        json=params
+    )
+
     try:
-        r = requests.get(f"{MANGA_UPDATES_URL.format(id=manga_id)}")
+        json = r.json()
+        if json["total_hits"] == 0:
+            raise Exception("No Results")
+        
+        chapters = []
+        for result in json["results"]:
+            record = result["record"]
+            chapters.append(Chapter(record["title"], record["chapter"]))
+        
+        return chapters
+    except:
+        return []
+
+
+def get_manga_name(manga_id: str) -> str:
+    params = {
+        "search": manga_id,
+        "search_type": "series",
+        "perpage": 1
+    }
+
+    r = requests.post(
+        url=MANGA_UPDATES_SEARCH_RELEASES_URL,
+        json=params
+    )
+
+    try:
+        json = r.json()
+        if json["total_hits"] == 0:
+            raise Exception("No Results")
+        
+        title = json["results"][0]["record"]["title"]
+
+        return title
     except:
         return ""
 
-    # parse rss feed
-    newest_chapter = _parse_rss_for_chapter(r.text)
-    
-    return newest_chapter
 
+if __name__ == "__main__":
+    print(get_manga_name("60867454335"))
 
-def _parse_rss_for_chapter(rss_string: str) -> str:
-    # create element tree object
-    root = ET.fromstring(rss_string)
-
-    # create empty list for news items
-    chapters = root.findall("./channel/item")
-
-    if len(chapters) == 0:
-        return -1
-    
-    latest_chapter_elem = chapters[0]
-    chapter_title_elem = latest_chapter_elem.find("./title")
-    
-    if chapter_title_elem == None:
-        return -1
-    
-    # return news items list
-    return _extract_chapter(chapter_title_elem.text)
-
-
-def _extract_chapter(title: str) -> str:
-    # chapters are written as "bla bla bla bla bla bla c.X/X.X/X.X-Y.Y"
-    # so split at spaces to get the chapter as its own string
-    split = title.split(" ")
-    chapter_string = split[-1] # chapter always at the end
-    chapter_string = chapter_string[2:] # remove "c."
-
-    return chapter_string
-
-
-def get_manga_name(manga_id: int) -> str:
-    # get rss feed
-    try:
-        r = requests.get(f"{MANGA_UPDATES_URL.format(id=manga_id)}")
-    except:
-        return -1
-    
-    return _parse_rss_for_title(r.text)
-    
-
-def _parse_rss_for_title(rss_string: str) -> str:
-    # create element tree object
-    root = ET.fromstring(rss_string)
-
-    # create empty list for news items
-    chapters = root.findall("./channel/item")
-
-    if len(chapters) == 0:
-        return ""
-    
-    latest_chapter_elem = chapters[0]
-    chapter_title_elem = latest_chapter_elem.find("./title")
-
-    if chapter_title_elem == None:
-        return ""
-
-    return _extract_title(chapter_title_elem.text)
-
-
-def _extract_title(title: str) -> str:
-    chapter_start = 0
-    # loop through the title backwards to find the first " ".
-    # thats where the title ends and the chapter starts
-    for i in range(len(title) - 1, -1, -1):
-        if title[i] == " ":
-            chapter_start = i
-            break
-    
-    return title[:chapter_start]
