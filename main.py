@@ -19,9 +19,10 @@ token = os.getenv("DISCORD_TOKEN")
 # |------------------------------------------------|
 DEV_GUILD_ID = discord.Object(id=942140682083115008)
 UPDATE_RATE_MINUTES = 30
-UPDATE_MESSAGE = "@{role} Chapter **{chapter_number}** is now out for **{manga_name}**!"
+UPDATE_MESSAGE = "Chapter **{chapter_number}** is now out for **{manga_name}**!"
 DB_CONNECTION_ERROR_MESSAGE = "An error occurred when trying to reach the server"
 BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE = "Bot has not been set up for this server"
+UPDATE_TIME = datetime.time(hour=23, minute=59)
 
 
 class Client(commands.Bot):
@@ -198,30 +199,31 @@ async def force_command_sync(interaction: discord.Interaction):
 # |------------------------------------------------|
 # |----------------------TASKS---------------------|
 # |------------------------------------------------|
-# check for updates 00:00 every day
-@tasks.loop(time=datetime.time(hour=0, minute=0))
+# check for updates 23:59 (11:59 PM) every day
+@tasks.loop(minutes=5)
 async def update():
     # for each manga
     # ... if updated
     # ... ... for every guild tracking this manga
     # ... ... ... send update
 
-    try:
-        manga = db.get_all_manga()
-    except:
-        return
+    
+    manga = db.get_all_manga()
+    
 
     for manga in manga:
         # mangaupdates api call
-        new_chapters = api.get_chapters(manga.id, manga.last_updated, str(datetime.date.today()))
+        new_chapters = api.get_chapters(str(manga.id), manga.last_updated, str(datetime.date.today()))
+
+        print(f"found {len(new_chapters)} new chapters for {manga.id} ({manga.name})")
         
         if len(new_chapters) == 0:
             continue
         
         try:
             channels = db.get_update_channel_ids_for_servers_tracking_manga(manga.id)
-        except:
-            continue
+        except Exception as e:
+            print(e)
 
         prepared_message = ""
         for chapter in new_chapters:

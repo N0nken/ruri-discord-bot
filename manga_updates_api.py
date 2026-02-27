@@ -1,5 +1,6 @@
 import requests
 import xml.etree.ElementTree as ET
+import datetime
 
 
 MANGA_UPDATES_SEARCH_RELEASES_URL = "https://api.mangaupdates.com/v1/releases/search"
@@ -64,5 +65,6 @@ def get_manga_name(manga_id: str) -> str:
 
 
 if __name__ == "__main__":
-    print(get_manga_name("60867454335"))
-
+    chapters = get_chapters("3236302268", "2026-02-23", str(datetime.date.today()))
+    for chapter in chapters:
+        print(chapter.title, chapter.number)

@@ -124,7 +124,7 @@ def get_all_manga() -> list[Manga]:
 
     manga = []
     for row in result:
-        manga.append(Manga(row[1], row[0], row[2]))
+        manga.append(Manga(row[1], row[0], last_updated=row[2]))
     
     return manga
 
