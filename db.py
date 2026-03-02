@@ -9,18 +9,7 @@ user = os.getenv("SQL_USER")
 password = os.getenv("SQL_PASS")
 host = os.getenv("SQL_HOST")
 
-database = mysql.connector.connect(
-    host=host,
-    user=user,
-    passwd=password,
-    database="ruri_discord_bot",
-    autocommit=True
-)
-
-def _exit_handler():
-    database.disconnect()
-
-atexit.register(_exit_handler)
+database = None
 
 
 class Manga:
@@ -37,6 +26,28 @@ class Guild:
         self.name = name
         self.channel = channel_id
         self.manga = manga
+
+
+def connect():
+    global database
+
+    if database != None:
+        disconnect()
+
+    database = mysql.connector.connect(
+        host=host,
+        user=user,
+        passwd=password,
+        database="ruri_discord_bot",
+        autocommit=True
+    )
+
+
+def disconnect():
+    global database
+    database.disconnect()
+    database = None
+
 
 
 def is_guild_registered(guild_id: int) -> bool:

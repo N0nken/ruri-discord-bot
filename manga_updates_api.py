@@ -65,6 +65,6 @@ def get_manga_name(manga_id: str) -> str:
 
 
 if __name__ == "__main__":
-    chapters = get_chapters("3236302268", "2026-02-23", str(datetime.date.today()))
+    chapters = get_chapters("37499968301", date_end=str(datetime.date.today()))
     for chapter in chapters:
         print(chapter.title, chapter.number)

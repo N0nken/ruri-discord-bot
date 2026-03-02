@@ -59,11 +59,19 @@ client = Client(command_prefix="!", intents=intents)
                      "(REQUIRED) Enables the bot for this server.")
 async def setup(interaction: discord.Interaction):
     try:
+        db.connect()
+    except Exception as e:
+        print(e)
+        return
+
+    try:
         db.register_guild(db.Guild(interaction.guild_id, interaction.guild.name, interaction.channel_id))
     except:
+        db.disconnect()
         await interaction.response.send_message("Bot has already been set up for this server OR an error occurred when trying to reach the server. \nTry again in a few minutes if you haven't set up the bot for this server yet.", ephemeral=True)
         return
 
+    db.disconnect()
     await interaction.response.send_message("Bot has now been set up for this server. Start tracking manga by running /track", ephemeral=True)
     print(f"set up bot for [{interaction.guild.name}]")
 
@@ -76,19 +84,29 @@ async def setup(interaction: discord.Interaction):
                      "Makes the bot send the updates in the channel this command is run in.")
 async def set_update_channel(interaction: discord.Interaction):
     try:
+        db.connect()
+    except Exception as e:
+        print(e)
+        return
+
+    try:
         if not db.is_guild_registered(interaction.guild_id):
+            db.disconnect()
             await interaction.response.send_message(BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE, ephemeral=True)
             return
     except:
+        db.disconnect()
         await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
 
     try:
         db.set_channel(interaction.guild_id, interaction.channel_id)
     except:
+        db.disconnect()
         await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
 
+    db.disconnect()
     await interaction.response.send_message(f"Will now send updates in **{interaction.channel.name}**", ephemeral=True)
 
 
@@ -100,15 +118,24 @@ async def set_update_channel(interaction: discord.Interaction):
                      "Start tracking a manga (role_id is not implemented)")
 async def track_manga(interaction: discord.Interaction, manga_updates_id: str, role_id: int = -1):
     try:
+        db.connect()
+    except Exception as e:
+        print(e)
+        return
+
+    try:
         if not db.is_guild_registered(interaction.guild_id):
             await interaction.response.send_message(BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE, ephemeral=True)
             return
-    except:
+    except Exception as e:
+        db.disconnect()
         await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
+        print(e)
         return
     
     manga_name = api.get_manga_name(manga_updates_id)
     if manga_name == "":
+        db.disconnect()
         await interaction.response.send_message(f"Couldn't find manga {manga_updates_id}", ephemeral=True)
         return
 
@@ -117,7 +144,8 @@ async def track_manga(interaction: discord.Interaction, manga_updates_id: str, r
         await interaction.response.send_message(f"Started tracking **{manga_name}**")
     except Exception as e:
         await interaction.response.send_message(f"Failed to start tracking **{manga_name}**", ephemeral=True)
-
+    
+    db.disconnect()
 
 
 
@@ -127,16 +155,25 @@ async def track_manga(interaction: discord.Interaction, manga_updates_id: str, r
                      "Stop tracking a manga")
 async def untrack_manga(interaction: discord.Interaction, manga_id: str):
     try:
+        db.connect()
+    except Exception as e:
+        print(e)
+        return
+
+    try:
         if not db.is_guild_registered(interaction.guild_id):
+            db.disconnect()
             await interaction.response.send_message(BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE, ephemeral=True)
             return
     except:
+        db.disconnect()
         await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
 
     try:
         manga = db.get_manga_details(manga_id)
     except:
+        db.disconnect()
         await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
 
@@ -145,6 +182,8 @@ async def untrack_manga(interaction: discord.Interaction, manga_id: str):
         await interaction.response.send_message(f"Stopped tracking **{manga.name}**")
     except Exception as e:
         await interaction.response.send_message(f"Failed to stop tracking {manga_id}. Use /tracked_manga to make sure this server is tracking it before trying again.", ephemeral=True)
+    
+    db.disconnect()
 
 
 
@@ -155,10 +194,18 @@ async def untrack_manga(interaction: discord.Interaction, manga_id: str):
                      "Shows a list of all tracked manga")
 async def tracked_manga(interaction: discord.Interaction):
     try:
+        db.connect()
+    except Exception as e:
+        print(e)
+        return
+
+    try:
         if not db.is_guild_registered(interaction.guild_id):
+            db.disconnect()
             await interaction.response.send_message(BOT_IS_NOT_ACTIVATED_ERROR_MESSAGE, ephemeral=True)
             return
     except:
+        db.disconnect()
         await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
         return
     
@@ -173,6 +220,7 @@ async def tracked_manga(interaction: discord.Interaction):
     except Exception as e:
         await interaction.response.send_message(DB_CONNECTION_ERROR_MESSAGE, ephemeral=True)
 
+    db.disconnect()
 
 
 
@@ -206,10 +254,17 @@ async def update():
     # ... if updated
     # ... ... for every guild tracking this manga
     # ... ... ... send update
+    try:
+        db.connect()
+    except Exception as e:
+        print(e)
+        return
 
-    
-    manga = db.get_all_manga()
-    
+    try:    
+        manga = db.get_all_manga()
+    except Exception as e:
+        db.disconnect()
+        return
 
     for manga in manga:
         # mangaupdates api call
@@ -242,6 +297,8 @@ async def update():
                 continue
         
         db.set_last_updated(manga.id)
+    
+    db.disconnect()
 
 
 # |------------------------------------------------|
