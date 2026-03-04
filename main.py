@@ -29,12 +29,6 @@ class Client(commands.Bot):
     async def on_ready(self):
         print(f"Logged in as {self.user}!")
 
-        try:
-            synced = await client.tree.sync(guild=DEV_GUILD_ID)
-            print(f"Synced {len(synced)} commands!")
-        except Exception as e:
-            print(f"Error syncing commands:\n\n{e}")
-
         if not update.is_running():
             update.start()
             print("Auto-update task started")
@@ -282,6 +276,8 @@ async def update():
 
         prepared_message = ""
         for chapter in new_chapters:
+            if chapter.number == manga.latest_chapter:
+                continue
             prepared_message += UPDATE_MESSAGE.format(
                 role=manga.role_id,
                 manga_name=chapter.title,
@@ -296,7 +292,7 @@ async def update():
             except:
                 continue
         
-        db.set_last_updated(manga.id)
+        db.set_latest_chapter(manga.id, new_chapters[-1].number)
     
     db.disconnect()
 

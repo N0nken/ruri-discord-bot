@@ -13,11 +13,12 @@ database = None
 
 
 class Manga:
-    def __init__(self, name: str, id: int, role_id: int = -1, last_updated="0000-00-00"):
+    def __init__(self, name: str, id: int, role_id: int = -1, last_updated="0000-00-00", latest_chapter=""):
         self.name = name
         self.id = id
         self.role_id = role_id
         self.last_updated = last_updated
+        self.latest_chapter = latest_chapter
 
 
 class Guild:
@@ -81,7 +82,7 @@ def get_tracked_manga(guild_id: int) -> list[Manga]:
     
     manga = []
     for row in result:
-        manga.append(Manga(row[1], row[0], row[2]))
+        manga.append(Manga(row[1], row[0], last_updated=row[2], latest_chapter=row[3]))
     
     return manga
 
@@ -95,14 +96,14 @@ def set_channel(guild_id: int, channel_id: int):
 
 
 def track_manga(guild_id: int, manga: Manga):
-    insert_manga_query = "INSERT INTO manga (manga_updates_id, name, last_updated) VALUES (%s, %s, %s)"
+    insert_manga_query = "INSERT INTO manga (manga_updates_id, name, last_updated, latest_chapter) VALUES (%s, %s, %s, %s)"
     update_guild_tracking_query = "INSERT INTO tracked_manga (discord_guild_id, manga_updates_id) VALUES (%s, %s)"
 
     cursor = database.cursor()
 
     # manga may already exist in db
     try:
-        cursor.execute(insert_manga_query, [manga.id, manga.name, manga.last_updated])
+        cursor.execute(insert_manga_query, [manga.id, manga.name, manga.last_updated, manga.latest_chapter])
     except:
         pass
 
@@ -135,7 +136,7 @@ def get_all_manga() -> list[Manga]:
 
     manga = []
     for row in result:
-        manga.append(Manga(row[1], row[0], last_updated=row[2]))
+        manga.append(Manga(row[1], row[0], last_updated=row[2], latest_chapter=row[3]))
     
     return manga
 
@@ -163,7 +164,7 @@ def get_manga_details(manga_id: int) -> Manga:
     result = cursor.fetchone()
     cursor.close()
 
-    return Manga(result[1], result[0], result[2])
+    return Manga(result[1], result[0], result[2], result[3])
 
 
 def set_last_updated(manga_id: int):
@@ -171,4 +172,12 @@ def set_last_updated(manga_id: int):
 
     cursor = database.cursor()
     cursor.execute(query, [str(datetime.date.today()), manga_id])
+    cursor.close()
+
+
+def set_latest_chapter(manga_id: int, latest_chapter: str):
+    query = "UPDATE manga SET last_updated=%s, latest_chapter=%s WHERE manga_updates_id=%s"
+
+    cursor = database.cursor()
+    cursor.execute(query, [str(datetime.date.today()), latest_chapter, manga_id])
     cursor.close()
